@@ -1,0 +1,93 @@
+[
+    {
+        "character": "金",
+        "onyomi": ["キン"],
+        "kunyomi": ["かね"]
+    },
+    {
+        "character": "土",
+        "onyomi": ["ド"],
+        "kunyomi": ["つち"]
+    },
+    {
+        "character": "日",
+        "onyomi": ["ニチ"],
+        "kunyomi": ["ひ"]
+    },
+    {
+        "character": "木",
+        "onyomi": ["モク"],
+        "kunyomi": ["き"]
+    },
+    {
+        "character": "水",
+        "onyomi": ["スイ"],
+        "kunyomi": ["みず"]
+    },
+    {
+        "character": "火",
+        "onyomi": ["カ"],
+        "kunyomi": ["ひ"]
+    },
+    {
+        "character": "月",
+        "onyomi": ["ゲツ"],
+        "kunyomi": ["つき"]
+    },
+    {
+        "character": "学",
+        "onyomi": ["がく"],
+        "kunyomi": []
+    },
+    {
+        "character": "学ぶ",
+        "yomi": "まな・ぶ"
+    },
+    {
+        "character": "校",
+        "onyomi": ["コウ"]
+    },
+    {
+        "character": "先",
+        "onyomi": ["セン"],
+        "kunyomi": ["さき"]
+    },
+    {
+        "character": "長",
+        "onyomi": ["チョウ"]
+    },
+    {
+        "character": "長い",
+        "yomi": "なが・い"
+    },
+    {
+        "character": "多",
+        "onyomi": ["タ"]
+    },
+    {
+        "character": "多い",
+        "yomi": "おお・い"
+    },
+    {
+        "character": "東",
+        "onyomi": ["トウ"],
+        "kunyomi": ["ひがし"]
+    },
+    {
+        "character": "京",
+        "onyomi": ["キョウ"]
+    },
+    {
+        "character": "少",
+        "onyomi": ["ショウ"]
+    },
+    {
+        "character": "少し",
+        "yomi": "すこ・し"
+    },
+    {
+        "character": "少ない",
+        "yomi": "すく・ない"
+    }
+
+]
