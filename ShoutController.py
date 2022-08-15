@@ -5,13 +5,16 @@ import os
 import json
 from pykakasi import Kakasi
 from ShoutObject import ShoutObject
+from ShoutSettingsWindow import ShoutSettingsWindow
 from ShoutWindow import ShoutWindow
 from PySide6.QtWidgets import *
 from PySide6.QtCore import QTimer
+from PySide6.QtGui import QAction
 
 @dataclass
 class ShoutController:
-    window: ShoutWindow
+    window: ShoutWindow = field(default_factory=ShoutWindow, init=True)
+    settings_window: ShoutSettingsWindow = field(default_factory=ShoutSettingsWindow, init=True)
 
     inventory: list[ShoutObject] = field(default_factory=list, init=True)
     active: list[ShoutObject] = field(default_factory=list, init=True)
@@ -23,39 +26,27 @@ class ShoutController:
     speed_mode: int = 5000
 
     def __post_init__(self):
-        # Load inventory
-        script_dir = os.path.dirname(__file__)
-        file_path = os.path.join(script_dir, 'inventory.json')
-        with open(file_path, 'r') as file:
-            data = json.load(file)
-            for object in data:
-                self.inventory.append(ShoutObject(
-                    object["character"],
-                    object["onyomi"] if "onyomi" in object.keys() else None,
-                    object["kunyomi"] if "kunyomi" in object.keys() else None,
-                    object["yomi"] if "yomi" in object.keys() else None
-                ))
-
         # Connect signals to widgets
+        self.window.start_button.clicked.connect(self.start_button_clicked)
         self.window.play_button.clicked.connect(self.play)
 
-        # self.window.romaji_mode_checkbox.clicked.connect(self.romaji_mode_checkbox_clicked)
+        self.window.open_action.triggered.connect(self.open_action_triggered)
+        self.window.save_action.triggered.connect(self.save_action_triggered)
+        self.window.settings_action.triggered.connect(self.settings_action_triggered)
 
-        self.window.inventory_list_widget.currentRowChanged.connect(self.inventory_list_currentRowChanged)
-        self.window.active_list_widget.currentRowChanged.connect(self.active_list_currentRowChanged)
+        self.settings_window.inventory_list_widget.currentRowChanged.connect(self.inventory_list_currentRowChanged)
+        self.settings_window.active_list_widget.currentRowChanged.connect(self.active_list_currentRowChanged)
 
-        self.window.settings_alphabet_widget.instructions_button_group.idClicked.connect(self.button_group_clicked)
-        self.window.settings_alphabet_widget.reading_button_group.idClicked.connect(self.button_group_clicked)
-        self.window.settings_alphabet_widget.speed_button_group.idClicked.connect(self.button_group_clicked)
+        self.settings_window.add_button.clicked.connect(self.add_button_clicked)
+        self.settings_window.inventory_list_widget.itemDoubleClicked.connect(self.add_button_clicked)
 
-        self.window.add_button.clicked.connect(self.add_button_clicked)
-        self.window.inventory_list_widget.itemDoubleClicked.connect(self.add_button_clicked)
+        self.settings_window.add_all_button.clicked.connect(self.add_all_button_clicked)
         
-        self.window.remove_button.clicked.connect(self.remove_button_clicked)
-        self.window.active_list_widget.itemDoubleClicked.connect(self.remove_button_clicked)
+        self.settings_window.remove_button.clicked.connect(self.remove_button_clicked)
+        self.settings_window.active_list_widget.itemDoubleClicked.connect(self.remove_button_clicked)
 
-        self.window.inventory_list_widget.addItems([x.character for x in self.inventory])
-        self.window.inventory_list_widget.setCurrentRow(0)
+        self.settings_window.inventory_list_widget.addItems([x.character for x in self.inventory])
+        self.settings_window.inventory_list_widget.setCurrentRow(0)
 
 
     def reveal_reading(self):
@@ -87,7 +78,42 @@ class ShoutController:
         self.window.play_button.setFocus()
 
 
+    def refresh_settings(self):
+        # Instructions
+        match self.window.instructions_actions.checkedAction():
+            case self.window.instructions_kanji_action:
+                self.instructions_mode = 0
+            case self.window.instructions_kana_action:
+                self.instructions_mode = 1
+            case self.window.instructions_romaji_action:
+                self.instructions_mode = 2
+        
+        # Reading
+        match self.window.reading_actions.checkedAction():
+            case self.window.reading_hiragana_action:
+                self.reading_mode = 11
+            case self.window.reading_kana_action:
+                self.reading_mode = 12
+            case self.window.reading_romaji_action:
+                self.reading_mode = 13
+
+        # Speed
+        match self.window.speed_actions.checkedAction():
+            case self.window.speed_slow_action:
+                self.speed_mode = 7000
+            case self.window.speed_medium_action:
+                self.speed_mode = 6000
+            case self.window.speed_fast_action:
+                self.speed_mode = 5000
+
+        print(self.instructions_mode)
+        print(self.reading_mode)
+        print(self.speed_mode)
+
+
     def play(self, checked: bool):
+        self.refresh_settings()
+
         if len(self.randomized) == 0:
             self.randomized = self.active.copy()
             shuffle(self.randomized)
@@ -130,19 +156,33 @@ class ShoutController:
 
     def inventory_list_currentRowChanged(self, row: int):
         shout = self.inventory[row]
-        self.window.sample_character_label.setText(shout.character)
-        self.window.sample_reading_label.setText(shout.onyomi_string + "\n" + shout.kunyomi_string)
+        self.settings_window.sample_character_label.setText(shout.character)
+        self.settings_window.sample_reading_label.setText(
+            (shout.onyomi_string if shout.onyomi_string else "")
+            + "\n"
+            + (shout.kunyomi_string if shout.kunyomi_string else "")
+            + "\n"
+            + (shout.yomi if shout.yomi else "")
+        )
 
 
     def active_list_currentRowChanged(self, row: int):
         shout = self.active[row]
-        self.window.sample_character_label.setText(shout.character)
-        self.window.sample_reading_label.setText(shout.onyomi_string + "\n" + shout.kunyomi_string)
+        self.settings_window.sample_character_label.setText(shout.character)
+        self.settings_window.sample_reading_label.setText(
+            (shout.onyomi_string if shout.onyomi_string else "")
+            + "\n"
+            + (shout.kunyomi_string if shout.kunyomi_string else "")
+            + "\n"
+            + (shout.yomi if shout.yomi else "")
+        )
 
 
     def refresh_lists(self):
-        self.window.active_list_widget.clear()
-        self.window.active_list_widget.addItems([x.character for x in self.active])
+        self.settings_window.inventory_list_widget.clear()
+        self.settings_window.inventory_list_widget.addItems([x.character for x in self.inventory])
+        self.settings_window.active_list_widget.clear()
+        self.settings_window.active_list_widget.addItems([x.character for x in self.active])
 
         if len(self.active) < 1:
             self.window.play_button.setDisabled(True)
@@ -153,30 +193,68 @@ class ShoutController:
     def romaji_mode_checkbox_clicked(self, checked: bool):
         self.is_romaji = checked
 
-    
-    def button_group_clicked(self, id: int):
-        if id >= 0 and id <= 9:
-            # Instructions
-            self.instructions_mode = id
-        elif id >= 10 and id <= 19:
-            # Reading
-            self.reading_mode = id
-        elif id >= 3000:
-            # Speed
-            self.speed_mode = id
-
 
     def add_button_clicked(self, checked: bool):
-        row = self.window.inventory_list_widget.currentRow()
+        row = self.settings_window.inventory_list_widget.currentRow()
         shout = self.inventory[row]
         self.active.append(shout)
         self.refresh_lists()
-        self.window.inventory_list_widget.setCurrentRow(row)
-        self.window.inventory_list_widget.setFocus()
+        self.settings_window.inventory_list_widget.setCurrentRow(row)
+        self.settings_window.inventory_list_widget.setFocus()
+
+    
+    def add_all_button_clicked(self, checked: bool):
+        self.active = self.inventory.copy()
+        self.refresh_lists()
 
 
     def remove_button_clicked(self, checked: bool):
-        row = self.window.active_list_widget.currentRow()
+        row = self.settings_window.active_list_widget.currentRow()
         shout = self.active.pop(row)
         self.inventory.append(shout)
         self.refresh_lists()
+
+
+    def open_action_triggered(self):
+        self.settings_action_triggered()
+        file_path = str(QFileDialog.getOpenFileName(None, "Open Inventory…", "~", "Inventories (*.json)")[0])
+        with open(file_path, 'r') as file:
+            self.inventory.clear()
+            data = json.load(file)
+            for object in data:
+                self.inventory.append(ShoutObject(
+                    object["character"],
+                    object["onyomi"] if "onyomi" in object.keys() else None,
+                    object["kunyomi"] if "kunyomi" in object.keys() else None,
+                    object["yomi"] if "yomi" in object.keys() else None
+                ))
+            self.refresh_lists()
+            self.window.shout_tabs.setCurrentIndex(1)
+            QMessageBox(QMessageBox.Information, "Inventory opened", f"Opened new inventory from {file_path}.").exec()
+
+
+    def save_action_triggered(self):
+        file_path = str(QFileDialog.getSaveFileName(None, "Save Inventory As…", "~", "Inventories (*.json)")[0])
+        with open(file_path, 'w+') as file:
+            inventory_list = []
+            for object in self.inventory:
+                dict = {}
+                dict["character"] = object.character
+                if object.onyomi_string:
+                    dict["onyomi"] = [x for x in object.onyomi_string.split("•")]
+                if object.kunyomi_string:
+                    dict["kunyomi"] = [x for x in object.kunyomi_string.split("•")]
+                if object.yomi:
+                    dict["yomi"] = object.yomi
+                inventory_list.append(dict)
+            string = json.dumps(inventory_list)
+            file.write(string)
+            QMessageBox(QMessageBox.Information, "Inventory saved", f"Your inventory was saved to {file_path}.").exec()
+
+
+    def start_button_clicked(self, checked: bool):
+        self.open_action_triggered()
+
+
+    def settings_action_triggered(self):
+        self.settings_window.show()

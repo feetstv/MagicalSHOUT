@@ -1,42 +1,44 @@
 from dataclasses import dataclass, field
 from PySide6.QtWidgets import *
 from PySide6.QtCore import Qt
-
-from ShoutSettingsWidget import ShoutSettingsWidget
+from PySide6.QtGui import QAction, QActionGroup, QIcon
 
 @dataclass
 class ShoutWindow(QMainWindow):
-    _tabs: QTabWidget = field(default_factory=QTabWidget, init=True)
+    instructions_actions: QActionGroup = field(init=False)
+    reading_actions: QActionGroup = field(init=False)
+    speed_actions: QActionGroup = field(init=False)
+    view_actions: list = field(init=False)
 
-    _shout_widget: QWidget = field(default_factory=QWidget, init=True)
-    _settings_widget: QWidget = field(default_factory=QWidget, init=True)
-    _inventory_widget: QWidget = field(default_factory=QWidget, init=True)
-    _control_widget: QWidget = field(default_factory=QWidget, init=True)
-    _active_widget: QWidget = field(default_factory=QWidget, init=True)
+    menubar: QMenuBar = field(default_factory=QMenuBar, init=True)
+    file_menu: QMenu = field(default_factory=QMenu, init=True)
+    open_action: QAction = field(default_factory=QAction, init=False)
+    save_action: QAction = field(default_factory=QAction, init=False)
+    settings_action: QAction = field(default_factory=QAction, init=False)
+    view_menu: QMenu = field(default_factory=QMenu, init=True)
+    instructions_menu: QMenu = field(default_factory=lambda: QMenu("Show Instructions As"))
+    instructions_kanji_action: QAction = field(default_factory=lambda: QAction("Kanji"))
+    instructions_kana_action: QAction = field(default_factory=lambda: QAction("Hiragana"))
+    instructions_romaji_action: QAction = field(default_factory=lambda: QAction("Romaji"))
+    reading_menu: QMenu = field(default_factory=lambda: QMenu("Show Reading As"))
+    reading_kana_action: QAction = field(default_factory=lambda: QAction("Hiragana and Katakana"))
+    reading_hiragana_action: QAction = field(default_factory=lambda: QAction("Hiragana Only"))
+    reading_romaji_action: QAction = field(default_factory=lambda: QAction("Romaji"))
+    speed_menu: QMenu = field(default_factory=lambda: QMenu("Reveal Speed"))
+    speed_slow_action: QAction = field(default_factory=lambda: QAction("Slow"))
+    speed_medium_action: QAction = field(default_factory=lambda: QAction("Medium"))
+    speed_fast_action: QAction = field(default_factory=lambda: QAction("Fast"))
 
-    _shout_layout: QVBoxLayout = field(default_factory=QVBoxLayout, init=True)
-    _settings_layout: QHBoxLayout = field(default_factory=QHBoxLayout, init=True)
-    _inventory_layout: QVBoxLayout = field(default_factory=QVBoxLayout, init=True)
-    _control_layout: QVBoxLayout = field(default_factory=QVBoxLayout, init=True)
-    _active_layout: QVBoxLayout = field(default_factory=QVBoxLayout, init=True)
+    shout_tabs: QStackedWidget = field(default_factory=QStackedWidget, init=True)
+    shout_widget: QWidget = field(default_factory=QWidget, init=True)
+    shout_layout: QVBoxLayout = field(default_factory=QVBoxLayout, init=True)
 
-    _instruction_label: QLabel = field(default_factory=QLabel, init=True)
-    _character_label: QLabel = field(default_factory=QLabel, init=True)
-    _reading_label: QLabel = field(default_factory=QLabel, init=True)
-    _inventory_label: QLabel = field(default_factory=QLabel, init=True)
-    _sample_character_label: QLabel = field(default_factory=QLabel, init=True)
-    _sample_reading_label: QLabel = field(default_factory=QLabel, init=True)
-    _active_label: QLabel = field(default_factory=QLabel, init=True)
+    instruction_label: QLabel = field(default_factory=QLabel, init=True)
+    character_label: QLabel = field(default_factory=QLabel, init=True)
+    reading_label: QLabel = field(default_factory=QLabel, init=True)
 
-    _settings_alphabet_widget: ShoutSettingsWidget = field(default_factory=ShoutSettingsWidget)
-
-    _play_button: QPushButton = field(default_factory=QPushButton, init=True)
-    _add_button: QPushButton = field(default_factory=QPushButton, init=True)
-    _remove_button: QPushButton = field(default_factory=QPushButton, init=True)
-
-    _inventory_list_widget: QListWidget = field(default_factory=QListWidget, init=True)
-    _active_list_widget: QListWidget = field(default_factory=QListWidget, init=True)
-
+    start_button: QPushButton = field(default_factory=lambda: QPushButton("Click to Start"))
+    play_button: QPushButton = field(default_factory=QPushButton, init=True)
 
     def __post_init__(self):
         super(ShoutWindow, self).__init__()
@@ -46,103 +48,99 @@ class ShoutWindow(QMainWindow):
             font-size: 64pt;
         }
         """)
-        self.setCentralWidget(self._tabs)
+        self.setCentralWidget(self.shout_tabs)
+
+        self.start_button.setStyleSheet("font-size: 64pt")
+        self.shout_tabs.addWidget(self.start_button)
+        self.shout_tabs.addWidget(self.shout_widget)
+
+        self.instructions_actions = QActionGroup(self)
+        self.instructions_actions.setExclusive(True)
+        for action in [
+            self.instructions_kanji_action,
+            self.instructions_kana_action,
+            self.instructions_romaji_action
+        ]:
+            self.instructions_actions.addAction(action)
+
+        self.reading_actions = QActionGroup(self)
+        self.reading_actions.setExclusive(True)
+        for action in [
+            self.reading_kana_action,
+            self.reading_hiragana_action,
+            self.reading_romaji_action
+        ]:
+            self.reading_actions.addAction(action)
+
+        self.speed_actions = QActionGroup(self)
+        self.speed_actions.setExclusive(True)
+        for action in [
+            self.speed_slow_action,
+            self.speed_medium_action,
+            self.speed_fast_action
+        ]:
+            self.speed_actions.addAction(action)
+
+        self._view_actions = [
+            self.instructions_kanji_action,
+            self.instructions_kana_action,
+            self.instructions_romaji_action,
+            self.reading_kana_action,
+            self.reading_hiragana_action,
+            self.reading_romaji_action,
+            self.speed_slow_action,
+            self.speed_medium_action,
+            self.speed_fast_action
+        ]
+
+        # Menu
+        self.menubar = QMenuBar()
+        # File
+        self.file_menu = QMenu("File")
+        self.open_action = QAction("&Open Inventory…")
+        self.save_action = QAction("&Save Inventory As…")
+        self.settings_action = QAction("&Settings…")
+        self.file_menu.addAction(self.open_action)
+        self.file_menu.addAction(self.save_action)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.settings_action)
+        # View
+        self.view_menu = QMenu("View")
+        self.instructions_menu.addActions(self.instructions_actions.actions())
+        self.reading_menu.addActions(self.reading_actions.actions())
+        self.speed_menu.addActions(self.speed_actions.actions())
+        for action in self._view_actions:
+            action.setCheckable(True)
+        self.instructions_kanji_action.setChecked(True)
+        self.reading_hiragana_action.setChecked(True)
+        self.speed_slow_action.setChecked(True)
+        self.view_menu.addSeparator()
+        # Add menus
+        self.menubar.addMenu(self.file_menu)
+        self.menubar.addMenu(self.view_menu)
+        self.view_menu.addMenu(self.instructions_menu)
+        self.view_menu.addMenu(self.reading_menu)
+        self.view_menu.addMenu(self.speed_menu)
+        self.setMenuBar(self.menubar)
 
         # Main page
-        self._shout_widget.setLayout(self._shout_layout)
+        self.shout_widget.setLayout(self.shout_layout)
         self.play_button.setDefault(True)
         self.play_button.setDisabled(True)
         self.play_button.setText("Play")
-        self._instruction_label.setStyleSheet("font-size: 64pt;")
-        self._instruction_label.setAlignment(Qt.AlignHCenter)
-        self._character_label.setStyleSheet("font-size: 384pt;")
-        self._character_label.setAlignment(Qt.AlignHCenter)
-        self._reading_label.setStyleSheet("font-size: 64pt;")
-        self._reading_label.setAlignment(Qt.AlignHCenter)
+        self.instruction_label.setStyleSheet("font-size: 64pt;")
+        self.instruction_label.setAlignment(Qt.AlignHCenter)
+        self.character_label.setStyleSheet("font-size: 384pt;")
+        self.character_label.setAlignment(Qt.AlignHCenter)
+        self.reading_label.setStyleSheet("font-size: 64pt;")
+        self.reading_label.setAlignment(Qt.AlignHCenter)
 
-        self._shout_layout.addWidget(self._instruction_label)
-        self._shout_layout.addStretch()
-        self._shout_layout.addWidget(self._character_label)
-        self._shout_layout.addStretch()
-        self._shout_layout.addWidget(self.reading_label)
-        self._shout_layout.addWidget(self.play_button)
+        self.shout_layout.addWidget(self.instruction_label)
+        self.shout_layout.addStretch()
+        self.shout_layout.addWidget(self.character_label)
+        self.shout_layout.addStretch()
+        self.shout_layout.addWidget(self.reading_label)
+        self.shout_layout.addWidget(self.play_button)
 
-        # Settings page
-        self._settings_widget.setLayout(self._settings_layout)
-        self._control_widget.setLayout(self._control_layout)
-        self._inventory_widget.setLayout(self._inventory_layout)
-        self._active_widget.setLayout(self._active_layout)
-
-        self._control_widget.setFixedWidth(300)
-        self._sample_character_label.setAlignment(Qt.AlignHCenter)
-        self._sample_character_label.setStyleSheet("font-size: 48pt;")
-        self._sample_reading_label.setAlignment(Qt.AlignHCenter)
-        self._sample_reading_label.setStyleSheet("font-size: 24pt;")
-        self._add_button.setText("Add character ->")
-        self._remove_button.setText("<- Remove character")
-
-        self._settings_layout.addWidget(self._inventory_widget)
-        self._inventory_layout.addWidget(QLabel("Inventory"))
-        self._inventory_layout.addWidget(self._inventory_list_widget)
-        self._settings_layout.addWidget(self._control_widget)
-        self._control_layout.addWidget(self._sample_character_label)
-        self._control_layout.addSpacing(24)
-        self._control_layout.addWidget(self._sample_reading_label)
-        self._control_layout.addStretch()
-        self._control_layout.addWidget(self._add_button)
-        self._control_layout.addWidget(self._remove_button)
-        self._control_layout.addStretch()
-        self._control_layout.addWidget(self._settings_alphabet_widget)
-        self._settings_layout.addWidget(self._active_widget)
-        self._active_layout.addWidget(QLabel("Active characters"))
-        self._active_layout.addWidget(self._active_list_widget)
-
-        # Set up tabs
-        self._tabs.addTab(self._shout_widget, "SHOUT!")
-        self._tabs.addTab(self._settings_widget, "Settings")
-
-        self.resize(1280, 720)
-
-    @property
-    def inventory_list_widget(self) -> QListWidget:
-        return self._inventory_list_widget
-
-    @property
-    def active_list_widget(self) -> QListWidget:
-        return self._active_list_widget
-
-    @property
-    def instruction_label(self) -> QLabel:
-        return self._instruction_label
-
-    @property
-    def character_label(self) -> QLabel:
-        return self._character_label
-
-    @property
-    def reading_label(self) -> QLabel:
-        return self._reading_label
-
-    @property
-    def settings_alphabet_widget(self) -> ShoutSettingsWidget:
-        return self._settings_alphabet_widget
-
-    @property
-    def sample_character_label(self) -> QLabel:
-        return self._sample_character_label
-
-    @property
-    def sample_reading_label(self) -> QLabel:
-        return self._sample_reading_label
-
-    @property
-    def play_button(self) -> QPushButton:
-        return self._play_button
-
-    @property
-    def add_button(self) -> QPushButton:
-        return self._add_button
-
-    @property
-    def remove_button(self) -> QPushButton:
-        return self._remove_button
+        self.resize(1280, 800)
+        self.move(0, 0)
