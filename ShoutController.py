@@ -45,8 +45,14 @@ class ShoutController:
         self.settings_window.remove_button.clicked.connect(self.remove_button_clicked)
         self.settings_window.active_list_widget.itemDoubleClicked.connect(self.remove_button_clicked)
 
+        self.settings_window.button_box.button(QDialogButtonBox.Ok).setDisabled(True)
+        self.settings_window.button_box.accepted.connect(self.settings_ok_clicked)
+
         self.settings_window.inventory_list_widget.addItems([x.character for x in self.inventory])
         self.settings_window.inventory_list_widget.setCurrentRow(0)
+
+        self.window.show()
+        self.open_action_triggered()
 
 
     def reveal_reading(self):
@@ -61,7 +67,7 @@ class ShoutController:
             case 2:
                 reading = shout.yomi
 
-        if self.reading_mode in range(10, 20):
+        if self.shout_mode != 2 and self.reading_mode in range(10, 20):
             converter = Kakasi()
             variants = converter.convert(reading)[0]
             match self.reading_mode:
@@ -106,10 +112,6 @@ class ShoutController:
             case self.window.speed_fast_action:
                 self.speed_mode = 5000
 
-        print(self.instructions_mode)
-        print(self.reading_mode)
-        print(self.speed_mode)
-
 
     def play(self, checked: bool):
         self.refresh_settings()
@@ -137,7 +139,7 @@ class ShoutController:
             case 1:
                 instruction = "訓読み"
             case 2:
-                instruction = "言葉を読んでください"
+                instruction = "言葉"
 
         if self.instructions_mode in range(1, 3):
             converter = Kakasi()
@@ -201,11 +203,18 @@ class ShoutController:
         self.refresh_lists()
         self.settings_window.inventory_list_widget.setCurrentRow(row)
         self.settings_window.inventory_list_widget.setFocus()
+        self.update_settings_ok_button()
 
     
     def add_all_button_clicked(self, checked: bool):
         self.active = self.inventory.copy()
         self.refresh_lists()
+        self.update_settings_ok_button()
+
+
+    def update_settings_ok_button(self):
+        if self.active:
+            self.settings_window.button_box.button(QDialogButtonBox.Ok).setEnabled(True)
 
 
     def remove_button_clicked(self, checked: bool):
@@ -229,7 +238,6 @@ class ShoutController:
                     object["yomi"] if "yomi" in object.keys() else None
                 ))
             self.refresh_lists()
-            self.window.shout_tabs.setCurrentIndex(1)
             QMessageBox(QMessageBox.Information, "Inventory opened", f"Opened new inventory from {file_path}.").exec()
 
 
@@ -257,4 +265,18 @@ class ShoutController:
 
 
     def settings_action_triggered(self):
-        self.settings_window.show()
+        self.settings_window.setParent(self.window)
+        self.settings_window.open()
+
+
+    def settings_ok_clicked(self):
+        self.settings_window.close()
+
+
+    def confirm_quit(self):
+        message_box = QMessageBox(QMessageBox.Question, "Do you want to quit Magical SHOUT?", "If you quit now, any changes to your inventory will not be saved.", QMessageBox.Close | QMessageBox.Cancel)
+        message_box.setDefaultButton(QMessageBox.Cancel)
+        result = message_box.exec()
+        if result == QMessageBox.Close:
+            self.settings_window.close()
+            self.window.close()

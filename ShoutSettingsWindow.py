@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
+from email.policy import default
 from PySide6.QtWidgets import *
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QActionGroup, QIcon
 
 @dataclass
-class ShoutSettingsWindow(QMainWindow):
-    settings_widget: QWidget = field(default_factory=QWidget, init=True)
+class ShoutSettingsWindow(QDialog):
+    window_layout: QVBoxLayout = field(default_factory=QVBoxLayout, init=True)
     settings_layout: QHBoxLayout = field(default_factory=QHBoxLayout, init=True)
     inventory_layout: QVBoxLayout = field(default_factory=QVBoxLayout, init=True)
     control_layout: QVBoxLayout = field(default_factory=QVBoxLayout, init=True)
@@ -19,9 +20,12 @@ class ShoutSettingsWindow(QMainWindow):
     add_button: QPushButton = field(default_factory=lambda: QPushButton("Add →"))
     add_all_button: QPushButton = field(default_factory=lambda: QPushButton("Add All →"))
     remove_button: QPushButton = field(default_factory=lambda: QPushButton("← Remove"))
+    play_button: QPushButton = field(default_factory=lambda: QPushButton("Play"))
 
     inventory_list_widget: QListWidget = field(default_factory=QListWidget, init=True)
     active_list_widget: QListWidget = field(default_factory=QListWidget, init=True)
+
+    button_box: QDialogButtonBox = field(default_factory=lambda: QDialogButtonBox(QDialogButtonBox.Ok))
 
 
     def __post_init__(self):
@@ -32,11 +36,9 @@ class ShoutSettingsWindow(QMainWindow):
             font-size: 64pt;
         }
         """)
-        self.setWindowFlag(Qt.Sheet)
-        self.setCentralWidget(self.settings_widget)
+        self.setLayout(self.window_layout)
 
-        # Settings page
-        self.settings_widget.setLayout(self.settings_layout)
+        self.window_layout.addLayout(self.settings_layout)
 
         self.sample_character_label.setAlignment(Qt.AlignHCenter)
         self.sample_character_label.setStyleSheet("font-size: 48pt;")
@@ -63,5 +65,7 @@ class ShoutSettingsWindow(QMainWindow):
         add_layout.addWidget(self.add_all_button)
         self.inventory_layout.addLayout(add_layout)
         self.active_layout.addWidget(self.remove_button)
+
+        self.window_layout.addWidget(self.button_box)
 
         self.resize(800, 600)
